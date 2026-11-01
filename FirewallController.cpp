@@ -23,6 +23,7 @@
 #define LOG_NDEBUG 0
 
 #include <cutils/log.h>
+#include <cutils/properties.h>
 
 #include "NetdConstants.h"
 #include "FirewallController.h"
@@ -53,6 +54,12 @@ int FirewallController::enableFirewall(void) {
 }
 
 int FirewallController::disableFirewall(void) {
+    // The stock RK2818 kernel has no netfilter tables. There are no firewall
+    // rules to flush; a failed flush must not abort network service startup.
+    // Enabling a firewall still uses the real iptables path and fails normally.
+    char noIptables[PROPERTY_VALUE_MAX];
+    property_get("ro.rk28.no_iptables", noIptables, "0");
+    if (!strcmp(noIptables, "1")) return 0;
     int res = 0;
 
     // flush any existing rules
